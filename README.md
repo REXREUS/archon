@@ -1,7 +1,7 @@
 # ArchonCLI 🏛️
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/rexreus/archon)](https://go.dev/)
-[![License](https://github.com/REXREUS/archon/blob/main/LICENSE)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#)
 [![Built with Gemini](https://img.shields.io/badge/Built%20with-Google%20Gemini%203-orange)](https://ai.google.dev/)
 
