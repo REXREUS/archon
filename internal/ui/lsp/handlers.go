@@ -129,7 +129,7 @@ func (s *Server) executeAsk(ctx context.Context, cfg *config.Config, query strin
 
 	prompt := query
 	if contextText != "" {
-		prompt = fmt.Sprintf("%s\n\nPertanyaan: %s", contextText, query)
+		prompt = fmt.Sprintf("%s\n\nQuestion: %s", contextText, query)
 	}
 
 	resp, err := client.Ask(ctx, prompt)
@@ -176,13 +176,13 @@ func (s *Server) executeExplain(ctx context.Context, cfg *config.Config, target 
 
 	var prompt string
 	if contextText != "" {
-		prompt = fmt.Sprintf("%s\n\nTugas: Jelaskan secara rinci tentang: %s", contextText, target)
+		prompt = fmt.Sprintf("%s\n\nTask: Explain in detail about: %s", contextText, target)
 	} else {
 		content, err := os.ReadFile(target)
 		if err == nil {
-			prompt = fmt.Sprintf("Jelaskan kode berikut:\n```\n%s\n```", string(content))
+			prompt = fmt.Sprintf("Explain the following code:\n```\n%s\n```", string(content))
 		} else {
-			prompt = fmt.Sprintf("Jelaskan tentang: %s", target)
+			prompt = fmt.Sprintf("Explain about: %s", target)
 		}
 	}
 

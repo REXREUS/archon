@@ -41,7 +41,7 @@ export ARCHON_GEMINI_KEY="AIzaSy..."
 
 ## ⌨️ CLI Command Reference
 
-> **Note:** Di dokumentasi ini kami menggunakan perintah `archon`. Jika Anda belum melakukan build biner, gunakan `go run cmd/archon/main.go` sebagai gantinya.
+> **Note:** In this documentation, we use the `archon` command. If you haven't built the binary yet, use `go run cmd/archon/main.go` instead.
 
 ### `archon index`
 Scans the codebase and updates the local vector database.
