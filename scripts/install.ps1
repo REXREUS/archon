@@ -1,68 +1,70 @@
 # Configuration
 $Repo = "rexreus/archon"
 $AppName = "archon"
+$InstallDir = Join-Path $HOME ".$AppName\bin"
 
-# 1. Security: Ensure TLS 1.2 is used for GitHub API/Download (Crucial for PowerShell 5.1 compatibility)
+# 1. Security & Environment Setup
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-Write-Host "Installing $AppName from GitHub Release..." -ForegroundColor Cyan
+Write-Host "--- Starting $AppName Installation ---" -ForegroundColor Cyan
 
 # 2. Robust Architecture Detection
-# We use .NET Framework methods to ensure it works on both Windows PowerShell 5.1 and PowerShell 7+
 $Is64Bit = [Environment]::Is64BitOperatingSystem
 $ProcessorArch = $env:PROCESSOR_ARCHITECTURE
-
-$Arch = if ($ProcessorArch -eq "ARM64") { 
-    "arm64" 
-} elseif ($Is64Bit) { 
-    "amd64" 
-} else { 
-    "386" 
-}
-
+$Arch = if ($ProcessorArch -eq "ARM64") { "arm64" } elseif ($Is64Bit) { "amd64" } else { "386" }
 $OS = "windows"
 $BinaryName = "$AppName-$OS-$Arch.exe"
 
-# 3. Fetch Latest Release Information
+# 3. Create Installation Directory
+if (!(Test-Path $InstallDir)) {
+    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+    Write-Host "Created installation directory: $InstallDir" -ForegroundColor Gray
+}
+
+# 4. Fetch Latest Release Information
 try {
     $ApiUrl = "https://api.github.com/repos/$Repo/releases/latest"
-    # Using -UseBasicParsing for speed and compatibility
-    $ReleaseInfo = Invoke-RestMethod -Uri $ApiUrl -Method Get
+    $ReleaseInfo = Invoke-RestMethod -Uri $ApiUrl -Method Get -Headers @{"User-Agent"="PowerShell-Install-Script"}
     $LatestTag = $ReleaseInfo.tag_name
 } catch {
-    Write-Host "ERROR: Failed to fetch latest version from GitHub API." -ForegroundColor Red
-    Write-Host "Please verify if the repository '$Repo' exists and has a public release." -ForegroundColor Gray
+    Write-Host "CRITICAL: Could not reach GitHub API. Check your internet connection." -ForegroundColor Red
     return
 }
 
 $DownloadUrl = "https://github.com/$Repo/releases/download/$LatestTag/$BinaryName"
+$FinalExecutable = Join-Path $InstallDir "$AppName.exe"
 
-# 4. Optimized Download Process
-# Temporarily disabling progress bar significantly increases download speed in CLI environments
-$OldProgressPreference = $ProgressPreference
+# 5. Download and Deploy
 $ProgressPreference = 'SilentlyContinue'
-
-Write-Host "Downloading version $LatestTag ($Arch)..." -ForegroundColor Yellow
+Write-Host "Downloading $AppName $LatestTag for $Arch..." -ForegroundColor Yellow
 try {
-    $OutputPath = Join-Path $pwd $BinaryName
-    Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutputPath -ErrorAction Stop
+    # Download to temporary location first to ensure integrity
+    $TempFile = Join-Path $env:TEMP "$BinaryName"
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile $TempFile -ErrorAction Stop
+    
+    # Move and Rename to final location
+    Move-Item -Path $TempFile -Destination $FinalExecutable -Force
 } catch {
-    Write-Host "ERROR: Download failed. File not found at: $DownloadUrl" -ForegroundColor Red
-    Write-Host "Note: Ensure the asset naming convention matches '$BinaryName' in the GitHub Release." -ForegroundColor Gray
+    Write-Host "ERROR: Download failed. The release asset might not exist: $DownloadUrl" -ForegroundColor Red
     return
 } finally {
-    # Restore Progress Bar setting
-    $ProgressPreference = $OldProgressPreference
+    $ProgressPreference = 'Continue'
 }
 
-# 5. Verification and Post-Install Suggestion
-if (Test-Path $OutputPath) {
-    $FileSize = (Get-Item $OutputPath).Length / 1MB
-    Write-Host "Download successful! (Size: $('{0:N2}' -f $FileSize) MB)" -ForegroundColor Green
-    
-    Write-Host "`nInstallation Complete." -ForegroundColor White
-    Write-Host "Next Step: Move the binary to a folder in your System PATH to use it globally." -ForegroundColor Gray
-    Write-Host "Example: Move-Item `"$BinaryName`" `"$env:ProgramFiles\$AppName.exe`" -Force" -ForegroundColor DarkGray
+# 6. Persistent PATH Integration
+Write-Host "Updating Environment PATH..." -ForegroundColor Cyan
+$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($UserPath -notlike "*$InstallDir*") {
+    $NewPath = "$UserPath;$InstallDir"
+    [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
+    # Update current session path immediately
+    $env:PATH += ";$InstallDir"
+    Write-Host "Successfully added $InstallDir to User PATH." -ForegroundColor Green
 } else {
-    Write-Host "ERROR: File verification failed. The binary was not saved correctly." -ForegroundColor Red
+    Write-Host "PATH already configured." -ForegroundColor Gray
+}
+
+# 7. Verification
+if (Test-Path $FinalExecutable) {
+    Write-Host "`nSUCCESS: $AppName has been installed to $InstallDir" -ForegroundColor Green
+    Write-Host "You can now run '$AppName' in any NEW terminal window." -ForegroundColor White
 }
