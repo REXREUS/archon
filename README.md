@@ -48,13 +48,28 @@ ArchonCLI provides a beautiful **TUI (Terminal User Interface)** built with the 
 
 ## 🚀 Quick Start
 
-### 1. Install
+### 1. Install & Uninstall
 
-**Automated (Recommended):**
+** Install Automated (Recommended):**
 You can use the provided installation scripts:
 
-- **Linux/macOS**: `curl -sSL https://raw.githubusercontent.com/rexreus/archon/main/scripts/install.sh | bash`
-- **Windows (PowerShell)**: `irm https://raw.githubusercontent.com/rexreus/archon/main/scripts/install.ps1 | iex`
+- **Linux/macOS**: 
+```bash 
+curl -sSL https://raw.githubusercontent.com/rexreus/archon/main/scripts/install.sh | bash 
+```
+- **Windows (PowerShell)**: 
+```bash 
+irm https://raw.githubusercontent.com/rexreus/archon/main/scripts/install.ps1 | iex
+```
+**Uninstall Automated (Recommended):**
+- **Linux/macOS**: 
+```bash 
+curl -sSL https://raw.githubusercontent.com/rexreus/archon/main/scripts/uninstall.sh | bash 
+```
+- **Windows (PowerShell)**: 
+```bash 
+irm https://raw.githubusercontent.com/rexreus/archon/main/scripts/uninstall.ps1 | iex
+```
 
 **Manual Build:**
 ```bash
