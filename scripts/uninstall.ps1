@@ -1,33 +1,55 @@
-$AppName = "archon.exe"
+# Configuration
+$AppName = "archon"
+$BinaryName = "$AppName.exe"
+$InstallDir = Join-Path $HOME ".$AppName\bin"
+$ConfigDir = Join-Path $HOME ".$AppName" # Standard directory for app data
 
-Write-Host "Removing $AppName..." -ForegroundColor Cyan
+Write-Host "--- Starting $AppName Uninstallation ---" -ForegroundColor Cyan
 
-$Commands = Get-Command $AppName -ErrorAction SilentlyContinue -All
-if ($Commands) {
-    foreach ($cmd in $Commands) {
-        $path = $cmd.Source
-        Write-Host "Removing $path"
-        Remove-Item -Path $path -Force
-    }
-    Write-Host "$AppName has been removed." -ForegroundColor Green
-} else {
-    Write-Host "$AppName not found in PATH." -ForegroundColor Yellow
+# 1. Kill Running Processes
+# Prevent "Access Denied" errors by closing the app if it's currently running
+$Process = Get-Process -Name $AppName -ErrorAction SilentlyContinue
+if ($Process) {
+    Write-Host "Closing running $AppName process..." -ForegroundColor Yellow
+    Stop-Process -Name $AppName -Force
+    Start-Sleep -Seconds 1 # Wait for file handles to release
 }
 
-$DelConf = Read-Host "Delete configuration folder and vector database? (y/n)"
-if ($DelConf -eq "y") {
-    $ConfigFile = Join-Path $env:USERPROFILE ".archon.yaml"
+# 2. Remove Binary and Bin Folder
+if (Test-Path $InstallDir) {
+    Write-Host "Removing binary folder: $InstallDir" -ForegroundColor Gray
+    Remove-Item -Path $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# 3. Clean up Environment PATH
+# This removes the entry we added during installation to keep the system clean
+Write-Host "Cleaning up Environment PATH..." -ForegroundColor Gray
+$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($UserPath -like "*$InstallDir*") {
+    # Remove the path and any double semicolons resulting from the removal
+    $NewPath = $UserPath -replace [regex]::Escape(";$InstallDir"), ""
+    $NewPath = $NewPath -replace [regex]::Escape($InstallDir), ""
+    [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
+    $env:PATH = $NewPath # Update current session
+    Write-Host "Removed $InstallDir from User PATH." -ForegroundColor Green
+}
+
+# 4. Optional: Data & Configuration Cleanup
+$CleanupData = Read-Host "Delete all configuration files and vector databases? (y/n)"
+if ($CleanupData -eq "y") {
+    # 4a. Config File (.archon.yaml)
+    $ConfigFile = Join-Path $HOME ".archon.yaml"
     if (Test-Path $ConfigFile) {
         Remove-Item -Path $ConfigFile -Force
-        Write-Host "Configuration file deleted."
+        Write-Host "Deleted configuration file: $ConfigFile" -ForegroundColor Gray
     }
 
-    if (Test-Path "chromem_db") {
-        Remove-Item -Path "chromem_db" -Recurse -Force
-        Write-Host "Vector database deleted."
+    # 4b. App Data Folder (chromem_db and others)
+    if (Test-Path $ConfigDir) {
+        Remove-Item -Path $ConfigDir -Recurse -Force
+        Write-Host "Deleted app data directory: $ConfigDir" -ForegroundColor Gray
     }
-    
-    Write-Host "Configuration and database have been deleted." -ForegroundColor Green
 }
 
-Write-Host "Uninstall complete." -ForegroundColor Cyan
+Write-Host "`nSUCCESS: $AppName has been completely uninstalled." -ForegroundColor Green
+Write-Host "Note: You may need to restart your terminal for PATH changes to fully sync." -ForegroundColor Yellow
